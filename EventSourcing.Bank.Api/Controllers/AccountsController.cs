@@ -3,44 +3,51 @@ using Microsoft.AspNetCore.Mvc;
 namespace EventSourcing.Bank.Api.Controllers
 {
     using EventSourcing.Bank.Api.Domain;
+    using EventSourcing.Bank.Api.Services;
+    using EventSourcing.Bank.Api.Store;
     using global::EventSourcing.Bank.Api.Domain;
     using Microsoft.AspNetCore.Mvc;
-
+    using System.Security.Principal;
 
     [ApiController]
     [Route("api/accounts")]
     public class AccountsController : ControllerBase
     {
-        private static BankAccount? _account;
+        private readonly AccountService _service;
 
+        public AccountsController(AccountService service)
+        {
+            _service = service;
+        }
+
+        // Called by HTTP client to create a new account
         [HttpPost]
         public IActionResult Create(string name)
         {
-            _account = BankAccount.Create(name);
-
-            return Ok(_account);
+            return Ok(
+        _service.CreateAccount(name));
         }
 
-        [HttpPost("deposit")]
-        public IActionResult Deposit(decimal amount)
+        // Called by HTTP client to deposit: load -> command -> save
+        [HttpPost("{accountId}/deposit")]
+        public IActionResult Deposit(Guid accountId, decimal amount)
         {
-            _account!.Deposit(amount);
-
-            return Ok(_account);
+            return Ok(_service.Deposit(accountId, amount));
         }
 
-        [HttpPost("withdraw")]
-        public IActionResult Withdraw(decimal amount)
+        // Called by HTTP client to withdraw: load -> command -> save
+        [HttpPost("{accountId}/withdraw")]
+        public IActionResult Withdraw(Guid accountId, decimal amount)
         {
-            _account!.Withdraw(amount);
-
-            return Ok(_account);
+            return Ok(
+        _service.Withdraw(accountId, amount));
         }
 
-        [HttpGet]
-        public IActionResult Get()
+        // Called by HTTP client to query current account state
+        [HttpGet("{accountId}")]
+        public IActionResult Get(Guid accountId)
         {
-            return Ok(_account);
+            return Ok(_service.Get(accountId));
         }
     }
 }
