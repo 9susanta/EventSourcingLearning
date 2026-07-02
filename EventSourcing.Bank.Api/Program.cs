@@ -1,44 +1,45 @@
-using EventSourcing.Bank.Api.Services;
-using EventSourcing.Bank.Api.Store;
+using EventSourcing.Bank.Application.Services;
+using EventSourcing.Bank.Application.Abstractions;
+using EventSourcing.Bank.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+using System.IO;
 
-// Event-sourcing style: Program startup ka kaam hai services aur middleware wire-up karna.
-// Role & responsibility:
-// - Configure DI aur register core infrastructure (jaise EventStore)
-// - Register controllers and OpenAPI for API surface
-// - Build aur run the application (serve HTTP requests)
 var builder = WebApplication.CreateBuilder(args);
 
-// Services add kar raha hai
-// Controllers ko register karta hai taaki controller-based endpoints kaam karein
 builder.Services.AddControllers();
-// Register OpenAPI/Swagger services (docs + UI)
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// InMemoryEventStore ko singleton ke roop mein register kar raha hai
-// Role: EventStore ko DI container mein register karna. Event-sourcing flow mein
-// responsibility yehi hai ke ek shared store available ho jahan aggregates apne events save/LOAD kar sakein.
-builder.Services.AddSingleton<InMemoryEventStore>();
-builder.Services.AddSingleton<AccountService>();
+var conn = builder.Configuration.GetConnectionString("Events") ?? builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext>(options =>
+    options.UseSqlServer(conn));
 
-// WebApplication build karta hai — DI finalize aur middleware pipeline ready
+builder.Services.AddScoped<IEventStore, EventSourcing.Bank.Infrastructure.Persistence.SqlServerEventStore>();
+builder.Services.AddScoped<IAccountService, EventSourcing.Bank.Application.Services.AccountService>();
+
+// Force a known URL so the Angular proxy can target the API
+builder.WebHost.UseUrls("http://localhost:5000");
+
 var app = builder.Build();
 
-// HTTP request pipeline configure karte hain
+// Angular dev server startup removed: run the Angular dev server manually from ClientApp when needed.
+
+// Apply EF Core migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
-    // Development mode mein Swagger/OpenAPI UI enable kar deta hai
     app.MapOpenApi();
 }
 
-// HTTP ko HTTPS par redirect karta hai
 app.UseHttpsRedirection();
 
-// Authorization middleware add karta hai (policies alag se configure karne honge)
 app.UseAuthorization();
 
-// Controller routes ko endpoints se map karta hai
 app.MapControllers();
 
-// App run karke requests sunna start karta hai
 app.Run();

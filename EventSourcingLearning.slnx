@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="EventSourcing.Bank.Api/EventSourcing.Bank.Api.csproj" />
+  <Project Path="EventSourcing.Bank.Application/EventSourcing.Bank.Application.csproj" />
+  <Project Path="EventSourcing.Bank.Domain/EventSourcing.Bank.Domain.csproj" />
+  <Project Path="EventSourcing.Bank.Infrastructure/EventSourcing.Bank.Infrastructure.csproj" />
 </Solution>

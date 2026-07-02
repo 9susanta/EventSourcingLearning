@@ -1,9 +1,12 @@
-﻿using EventSourcing.Bank.Api.Events;
+using System.Collections.Generic;
+using System.Linq;
+using EventSourcing.Bank.Domain.Events;
 
-namespace EventSourcing.Bank.Api.Domain
+namespace EventSourcing.Bank.Domain.Aggregates
 {
-    public class BankAccount
+    public class AccountAggregate
     {
+        public int Version { get; private set; }
         public Guid Id { get; private set; }
 
         public string AccountHolder { get; private set; }
@@ -14,12 +17,11 @@ namespace EventSourcing.Bank.Api.Domain
 
         public IReadOnlyCollection<object> UncommittedEvents => _uncommittedEvents.AsReadOnly();
 
-        // Called by callers to create a new account; emits AccountCreated and queues it as uncommitted
-        public static BankAccount Create(string accountHolder)
+        public static AccountAggregate Create(string accountHolder)
         {
-            var account = new BankAccount();
+            var account = new AccountAggregate();
 
-            var evt = new AccountCreated(
+            var evt = new AccountCreatedEvent(
                 Guid.NewGuid(),
                 accountHolder);
 
@@ -30,75 +32,71 @@ namespace EventSourcing.Bank.Api.Domain
             return account;
         }
 
-        // Called by callers to deposit money; emits MoneyDeposited, applies it and queues it
         public void Deposit(decimal amount)
         {
-            var evt = new MoneyDeposited(amount);
+            var evt = new MoneyDepositedEvent(amount);
 
             Apply(evt);
 
             _uncommittedEvents.Add(evt);
         }
 
-        // Called by callers to withdraw money; emits MoneyWithdrawn, applies it and queues it
         public void Withdraw(decimal amount)
         {
-            var evt = new MoneyWithdrawn(amount);
+            var evt = new MoneyWithdrawnEvent(amount);
 
             Apply(evt);
 
             _uncommittedEvents.Add(evt);
         }
 
-        // Invoked internally to apply AccountCreated during commands and replay
-        private void Apply(AccountCreated evt)
+        private void Apply(AccountCreatedEvent evt)
         {
             Id = evt.AccountId;
             AccountHolder = evt.AccountHolder;
             Balance = 0;
         }
 
-        // Invoked internally to apply MoneyDeposited during commands and replay
-        private void Apply(MoneyDeposited evt)
+        private void Apply(MoneyDepositedEvent evt)
         {
             Balance += evt.Amount;
         }
 
-        // Invoked internally to apply MoneyWithdrawn during commands and replay
-        private void Apply(MoneyWithdrawn evt)
+        private void Apply(MoneyWithdrawnEvent evt)
         {
             Balance -= evt.Amount;
         }
 
-        // Called by EventStore.Load to replay history and rehydrate the aggregate
         public void LoadFromHistory(IEnumerable<object> events)
         {
             foreach (var e in events)
             {
                 switch (e)
                 {
-                    case AccountCreated created:
+                    case AccountCreatedEvent created:
                         Apply(created);
                         break;
 
-                    case MoneyDeposited deposited:
+                    case MoneyDepositedEvent deposited:
                         Apply(deposited);
                         break;
 
-                    case MoneyWithdrawn withdrawn:
+                    case MoneyWithdrawnEvent withdrawn:
                         Apply(withdrawn);
                         break;
                 }
             }
 
+            Version = events.Count();
+
             ClearEvents();
         }
 
-        // Called by EventStore.Save and after replay to clear pending events
         public void ClearEvents()
         {
             _uncommittedEvents.Clear();
         }
-    }
 
+        public void SetVersion(int v) => Version = v;
+    }
 }
