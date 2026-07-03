@@ -1,0 +1,193 @@
+{
+  "info": {
+    "name": "EventSourcing API (dynamic)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Create Account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"{{accountName}}\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/accounts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "accounts"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// set dynamic account name",
+              "pm.environment.set('accountName','User_'+Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Create - status 200', ()=> pm.response.to.have.status(200));",
+              "try {",
+              "  const j = pm.response.json();",
+              "  const id = j.id || j.Id || j.ID;",
+              "  if(id) pm.environment.set('accountId', id);",
+              "  const holder = j.accountHolder || j.AccountHolder || j.name || j.Name;",
+              "  if(holder) pm.environment.set('accountHolder', holder);",
+              "  const bal = j.balance || j.Balance; if(typeof bal !== 'undefined') pm.environment.set('accountBalance', bal);",
+              "} catch(e){ pm.environment.unset('accountId'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"amount\":100}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/accounts/{{accountId}}/deposit",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "accounts",
+            "{{accountId}}",
+            "deposit"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if(!pm.environment.get('accountId')) throw new Error('accountId not set. Run Create first.');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Deposit - status 200', ()=> pm.response.to.have.status(200));",
+              "try{ const j=pm.response.json(); if(j.balance||j.Balance) pm.environment.set('accountBalance', j.balance||j.Balance);}catch(e){}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Withdraw",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"amount\":50}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/accounts/{{accountId}}/withdraw",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "accounts",
+            "{{accountId}}",
+            "withdraw"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if(!pm.environment.get('accountId')) throw new Error('accountId not set. Run Create first.');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Withdraw - status 200', ()=> pm.response.to.have.status(200));",
+              "try{ const j=pm.response.json(); if(j.balance||j.Balance) pm.environment.set('accountBalance', j.balance||j.Balance);}catch(e){}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Account",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "accounts",
+            "{{accountId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if(!pm.environment.get('accountId')) throw new Error('accountId not set. Run Create first.');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Get - status 200', ()=> pm.response.to.have.status(200));",
+              "try{ const j=pm.response.json(); pm.environment.set('accountBalance', j.balance||j.Balance); }catch(e){}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

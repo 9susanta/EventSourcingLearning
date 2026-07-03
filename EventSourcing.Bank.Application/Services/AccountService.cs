@@ -44,7 +44,7 @@ namespace EventSourcing.Bank.Application.Services
         }
 
         public Task<AccountAggregate> GetAsync(Guid accountId, CancellationToken cancellationToken)
-        {
+        { 
             return _eventStore.LoadAsync(accountId, cancellationToken);
         }
         public Task<IEnumerable<EventSourcing.Bank.Application.DTOs.EventDto>> GetEventsAsync(Guid accountId, CancellationToken cancellationToken)

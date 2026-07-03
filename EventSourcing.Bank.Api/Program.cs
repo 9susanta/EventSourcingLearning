@@ -2,13 +2,23 @@ using EventSourcing.Bank.Application.Services;
 using EventSourcing.Bank.Application.Abstractions;
 using EventSourcing.Bank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
-using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// Configure CORS for Angular dev server
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularDevServer", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var conn = builder.Configuration.GetConnectionString("Events") ?? builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext>(options =>
@@ -17,12 +27,11 @@ builder.Services.AddDbContext<EventSourcing.Bank.Infrastructure.Persistence.Even
 builder.Services.AddScoped<IEventStore, EventSourcing.Bank.Infrastructure.Persistence.SqlServerEventStore>();
 builder.Services.AddScoped<IAccountService, EventSourcing.Bank.Application.Services.AccountService>();
 
-// Force a known URL so the Angular proxy can target the API
-builder.WebHost.UseUrls("http://localhost:5000");
+
 
 var app = builder.Build();
 
-// Angular dev server startup removed: run the Angular dev server manually from ClientApp when needed.
+
 
 // Apply EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
@@ -37,6 +46,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS for requests from the Angular dev server
+app.UseCors("AllowAngularDevServer");
 
 app.UseAuthorization();
 

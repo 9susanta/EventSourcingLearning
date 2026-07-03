@@ -1,5 +1,4 @@
 using EventSourcing.Bank.Application.Abstractions;
-using EventSourcing.Bank.Application.Abstractions;
 using EventSourcing.Bank.Domain.Aggregates;
 using EventSourcing.Bank.Infrastructure.Serialization;
 using Microsoft.EntityFrameworkCore;

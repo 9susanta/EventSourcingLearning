@@ -1,42 +1,44 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, InjectionToken } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 export interface Account { id: string; name: string; balance?: number }
+export interface EventDto { type: string; data: string; version: number; occurredAt: string }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = inject(API_BASE_URL);
 
   getAccounts(): Observable<Account[]> {
-    return this.http.get<Account[]>('/api/accounts');
+    return this.http.get<Account[]>(`${this.baseUrl}/api/accounts`);
   }
 
   getAccount(id: string): Observable<Account> {
-    return this.http.get<Account>(`/api/accounts/${id}`);
+    return this.http.get<Account>(`${this.baseUrl}/api/accounts/${id}`);
   }
 
-  deposit(accountId: string, amount: number): Observable<any> {
-    return this.http.post(`/api/accounts/${accountId}/deposit?amount=${amount}`, null);
+  deposit(accountId: string, amount: number): Observable<Account> {
+    // send amount in JSON body (matches Postman collection)
+    return this.http.post<Account>(`${this.baseUrl}/api/accounts/${accountId}/deposit`, { amount });
   }
 
-  withdraw(accountId: string, amount: number): Observable<any> {
-    return this.http.post(`/api/accounts/${accountId}/withdraw?amount=${amount}`, null);
+  withdraw(accountId: string, amount: number): Observable<Account> {
+    // send amount in JSON body (matches Postman collection)
+    return this.http.post<Account>(`${this.baseUrl}/api/accounts/${accountId}/withdraw`, { amount });
   }
 
-  // Create a new account. Body shape depends on API; use { name, balance? }
   createAccount(body: { name: string; balance?: number }): Observable<Account> {
-    return this.http.post<Account>(`/api/accounts`, body);
+    return this.http.post<Account>(`${this.baseUrl}/api/accounts`, body);
   }
 
-  // Update existing account
   updateAccount(id: string, body: { name?: string; balance?: number }): Observable<Account> {
-    return this.http.put<Account>(`/api/accounts/${id}`, body);
+    return this.http.put<Account>(`${this.baseUrl}/api/accounts/${id}`, body);
   }
 
-  // Get transaction history for an account
-  getTransactions(accountId: string): Observable<any[]> {
-    return this.http.get<any[]>(`/api/accounts/${accountId}/transactions`);
+  getTransactions(accountId: string): Observable<EventDto[]> {
+    return this.http.get<EventDto[]>(`${this.baseUrl}/api/accounts/${accountId}/events`);
   }
 
   get<T>(url: string): Observable<T> { return this.http.get<T>(url); }

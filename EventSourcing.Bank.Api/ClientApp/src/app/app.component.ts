@@ -6,13 +6,22 @@ import { RouterModule } from '@angular/router';
   standalone: true,
   imports: [RouterModule],
   template: `
-    <header style="padding:0.5rem;background:#f4f4f4">
-      <a routerLink="/">Home</a>
-    </header>
-    <main style="padding:1rem">
-      <router-outlet></router-outlet>
-    </main>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1 class="app-title">Bank Client</h1>
+          <p class="header-note">Manage accounts, deposits, withdrawals, and transaction history with a polished, production-ready dashboard.</p>
+        </div>
+        <nav class="app-nav">
+          <a routerLink="/">Accounts</a>
+          <a routerLink="/accounts/create">Create Account</a>
+        </nav>
+      </header>
+      <main class="app-main">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   `,
-  styles: [`:host { display:block; }`]
+  styles: [`:host { display:block; min-height:100vh; }`]
 })
 export class AppComponent {}

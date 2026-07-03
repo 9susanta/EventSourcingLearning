@@ -20,17 +20,4 @@
     <ProjectReference Include="..\EventSourcing.Bank.Infrastructure\EventSourcing.Bank.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Application\DTOs\" />
-    <Folder Include="Application\Services\" />
-    <Folder Include="Domain\Aggregates\" />
-    <Folder Include="Domain\Events\" />
-    <Folder Include="DTOs\" />
-    <Folder Include="Events\" />
-    <Folder Include="Infrastructure\Persistence\" />
-    <Folder Include="Infrastructure\Serialization\" />
-    <Folder Include="Services\" />
-    <Folder Include="Store\" />
-  </ItemGroup>
-
 </Project>
