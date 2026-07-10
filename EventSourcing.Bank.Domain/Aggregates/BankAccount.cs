@@ -67,6 +67,16 @@ namespace EventSourcing.Bank.Domain.Aggregates
             Balance -= evt.Amount;
         }
 
+        public void RestoreSnapshot(Guid id,string accountHolder,decimal balance,int version)
+        {
+            Id = id;
+            AccountHolder = accountHolder;
+            Balance = balance;
+            Version = version;
+
+            ClearEvents();
+        }
+
         public void LoadFromHistory(IEnumerable<object> events)
         {
             foreach (var e in events)
@@ -85,13 +95,11 @@ namespace EventSourcing.Bank.Domain.Aggregates
                         Apply(withdrawn);
                         break;
                 }
+                Version++;
             }
-
-            Version = events.Count();
 
             ClearEvents();
         }
-
         public void ClearEvents()
         {
             _uncommittedEvents.Clear();

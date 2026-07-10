@@ -8,6 +8,5 @@ namespace EventSourcing.Bank.Application.Services
         Task<AccountAggregate> DepositAsync(Guid accountId, decimal amount, CancellationToken cancellationToken);
         Task<AccountAggregate> WithdrawAsync(Guid accountId, decimal amount, CancellationToken cancellationToken);
         Task<AccountAggregate> GetAsync(Guid accountId, CancellationToken cancellationToken);
-        Task<IEnumerable<EventSourcing.Bank.Application.DTOs.EventDto>> GetEventsAsync(Guid accountId, CancellationToken cancellationToken);
     }
 }

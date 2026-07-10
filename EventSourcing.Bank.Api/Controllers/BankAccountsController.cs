@@ -1,21 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using EventSourcing.Bank.Application.Services;
 using EventSourcing.Bank.Application.DTOs;
 using EventSourcing.Bank.Application.Abstractions;
+using EventSourcing.Bank.Infrastructure.CQRS;
+using EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers;
+using EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers;
 
 namespace EventSourcing.Bank.Api.Controllers
 {
     [ApiController]
-    [Route("api/accounts")]
-    public class BankAccountsController : ControllerBase
+    [Route("api/[controller]")]
+    public class AccountsController : ControllerBase
     {
-        private readonly IAccountService _service;
-        private readonly ILogger<BankAccountsController> _logger;
+        private readonly CommandDispatcher _commandDispatcher;
+        private readonly QueryDispatcher _queryDispatcher;
+        private readonly ILogger<AccountsController> _logger;
 
-        public BankAccountsController(IAccountService service, ILogger<BankAccountsController> logger)
+        public AccountsController(CommandDispatcher commandDispatcher, QueryDispatcher queryDispatcher, ILogger<AccountsController> logger)
         {
-            _service = service;
+            _commandDispatcher = commandDispatcher;
+            _queryDispatcher = queryDispatcher;
             _logger = logger;
         }
 
@@ -24,7 +27,8 @@ namespace EventSourcing.Bank.Api.Controllers
         {
             try
             {
-                var account = await _service.CreateAccountAsync(req.Name, cancellationToken);
+                var command = new CreateAccountCommand{ AccountHolder = req.Name };
+                var account = await _commandDispatcher.HandleAsync<CreateAccountCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
                 return Ok(res);
             }
@@ -39,12 +43,45 @@ namespace EventSourcing.Bank.Api.Controllers
             }
         }
 
+        [HttpGet("{accountId}")]
+        public async Task<IActionResult> GetById(Guid accountId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var query = new GetAccountQuery{ AccountId = accountId };
+                var account = await _queryDispatcher.HandleAsync<GetAccountQuery, AccountResponse>(query, cancellationToken);
+                return Ok(account);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Request cancelled by client for GetById account {AccountId}", accountId);
+                return StatusCode(499);
+            }
+        }
+
+        [HttpGet("{accountId}/transactions")]
+        public async Task<IActionResult> GetTransactionHistory(Guid accountId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var query = new GetAccountHistoryQuery{ AccountId = accountId };
+                var transactions = await _queryDispatcher.HandleAsync<GetAccountHistoryQuery, IEnumerable<EventDto>>(query, cancellationToken);
+                return Ok(transactions);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Request cancelled by client for GetTransactionHistory {AccountId}", accountId);
+                return StatusCode(499);
+            }
+        }
+
         [HttpPost("{accountId}/deposit")]
         public async Task<IActionResult> Deposit(Guid accountId, [FromBody] DepositRequest req, CancellationToken cancellationToken)
         {
             try
             {
-                var account = await _service.DepositAsync(accountId, req.Amount, cancellationToken);
+                var command = new DepositCommand{ AccountId = accountId, Amount = req.Amount };
+                var account = await _commandDispatcher.HandleAsync<DepositCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
                 return Ok(res);
             }
@@ -64,52 +101,14 @@ namespace EventSourcing.Bank.Api.Controllers
         {
             try
             {
-                var account = await _service.WithdrawAsync(accountId, req.Amount, cancellationToken);
+                var command = new WithdrawCommand{ AccountId = accountId, Amount = req.Amount };
+                var account = await _commandDispatcher.HandleAsync<WithdrawCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
                 return Ok(res);
             }
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Request cancelled by client for Withdraw {AccountId}", accountId);
-                return StatusCode(499);
-            }
-            catch (ConcurrencyException)
-            {
-                return Conflict();
-            }
-        }
-
-        [HttpGet("{accountId}")]
-        public async Task<IActionResult> Get(Guid accountId, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var account = await _service.GetAsync(accountId, cancellationToken);
-                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
-                return Ok(res);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Request cancelled by client for Get account {AccountId}", accountId);
-                return StatusCode(499);
-            }
-            catch (ConcurrencyException)
-            {
-                return Conflict();
-            }
-        }
-
-        [HttpGet("{accountId}/events")]
-        public async Task<IActionResult> GetEvents(Guid accountId, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var events = await _service.GetEventsAsync(accountId, cancellationToken);
-                return Ok(events);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Request cancelled by client for GetEvents {AccountId}", accountId);
                 return StatusCode(499);
             }
             catch (ConcurrencyException)
