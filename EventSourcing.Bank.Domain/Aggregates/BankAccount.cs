@@ -13,9 +13,9 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
         public decimal Balance { get; private set; }
 
-        private readonly List<object> _uncommittedEvents = new();
+        private readonly List<IEvent> _uncommittedEvents = new();
 
-        public IReadOnlyCollection<object> UncommittedEvents => _uncommittedEvents.AsReadOnly();
+        public IReadOnlyCollection<IEvent> UncommittedEvents => _uncommittedEvents.AsReadOnly();
 
         public static AccountAggregate Create(string accountHolder)
         {
