@@ -12,31 +12,31 @@ namespace EventSourcing.Bank.Application.Services
             _repository = repository;
         }
 
-        public async Task<AccountAggregate> CreateAccountAsync(string accountHolder, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> CreateAccountAsync(string accountHolder, Guid commandId, CancellationToken cancellationToken)
         {
-            var account = AccountAggregate.Create(accountHolder);
+            var account = AccountAggregate.Create(accountHolder, commandId);
 
             await _repository.SaveAsync(account, 0, cancellationToken);
 
             return account;
         }
 
-        public async Task<AccountAggregate> DepositAsync(Guid accountId, decimal amount, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> DepositAsync(Guid accountId, decimal amount, Guid commandId, CancellationToken cancellationToken)
         {
             var account = await _repository.GetByIdAsync(accountId, cancellationToken);
 
-            account.Deposit(amount);
+            account.Deposit(amount, commandId);
 
             await _repository.SaveWithSnapshotAsync(account, account.Version, cancellationToken);
 
             return account;
         }
 
-        public async Task<AccountAggregate> WithdrawAsync(Guid accountId, decimal amount, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> WithdrawAsync(Guid accountId, decimal amount, Guid commandId, CancellationToken cancellationToken)
         {
             var account = await _repository.GetByIdAsync(accountId, cancellationToken);
 
-            account.Withdraw(amount);
+            account.Withdraw(amount, commandId);
 
             await _repository.SaveWithSnapshotAsync(account, account.Version, cancellationToken);
 

@@ -4,6 +4,7 @@ using EventSourcing.Bank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EventSourcing.Bank.Infrastructure.Migrations
 {
     [DbContext(typeof(EventStoreDbContext))]
-    partial class EventStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711151246_AddReadModel")]
+    partial class AddReadModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

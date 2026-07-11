@@ -19,13 +19,8 @@ namespace EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers
 
         public async Task<AccountResponse> HandleAsync(GetAccountQuery query, CancellationToken cancellationToken)
         {
-            var account = await _repository.GetByIdAsync(query.AccountId, cancellationToken);
-            return new AccountResponse
-            {
-                Id = account.Id,
-                AccountHolder = account.AccountHolder,
-                Balance = account.Balance
-            };
+            // Now reading from the highly-optimized Read Model instead of replaying events!
+            return await _repository.GetReadModelAsync(query.AccountId, cancellationToken);
         }
     }
 }

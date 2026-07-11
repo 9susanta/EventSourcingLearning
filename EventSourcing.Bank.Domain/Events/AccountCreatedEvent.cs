@@ -2,5 +2,5 @@ using System;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public record AccountCreatedEvent(Guid AccountId, string AccountHolder):IEvent;
+    public record AccountCreatedEvent(Guid AccountId, string AccountHolder, Guid CommandId);
 }

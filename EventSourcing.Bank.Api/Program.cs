@@ -31,6 +31,7 @@ builder.Services.AddDbContext<EventSourcing.Bank.Infrastructure.Persistence.Even
     options.UseSqlServer(conn));
 
 // Infrastructure
+builder.Services.AddScoped<EventSourcing.Bank.Infrastructure.Persistence.ReadModels.AccountProjection>();
 builder.Services.AddScoped<IEventStore, EventSourcing.Bank.Infrastructure.Persistence.SqlServerEventStore>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 

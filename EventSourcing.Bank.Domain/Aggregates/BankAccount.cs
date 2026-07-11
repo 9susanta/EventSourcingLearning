@@ -13,17 +13,21 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
         public decimal Balance { get; private set; }
 
-        private readonly List<IEvent> _uncommittedEvents = new();
+        private readonly List<object> _uncommittedEvents = new();
+        private readonly HashSet<Guid> _processedCommands = new();
 
-        public IReadOnlyCollection<IEvent> UncommittedEvents => _uncommittedEvents.AsReadOnly();
+        public IReadOnlyCollection<object> UncommittedEvents => _uncommittedEvents.AsReadOnly();
 
-        public static AccountAggregate Create(string accountHolder)
+        public bool HasProcessedCommand(Guid commandId) => _processedCommands.Contains(commandId);
+
+        public static AccountAggregate Create(string accountHolder, Guid commandId)
         {
             var account = new AccountAggregate();
 
             var evt = new AccountCreatedEvent(
                 Guid.NewGuid(),
-                accountHolder);
+                accountHolder,
+                commandId);
 
             account.Apply(evt);
 
@@ -32,18 +36,22 @@ namespace EventSourcing.Bank.Domain.Aggregates
             return account;
         }
 
-        public void Deposit(decimal amount)
+        public void Deposit(decimal amount, Guid commandId)
         {
-            var evt = new MoneyDepositedEvent(amount);
+            if (HasProcessedCommand(commandId)) return;
+
+            var evt = new MoneyDepositedEvent(amount, commandId);
 
             Apply(evt);
 
             _uncommittedEvents.Add(evt);
         }
 
-        public void Withdraw(decimal amount)
+        public void Withdraw(decimal amount, Guid commandId)
         {
-            var evt = new MoneyWithdrawnEvent(amount);
+            if (HasProcessedCommand(commandId)) return;
+
+            var evt = new MoneyWithdrawnEvent(amount, commandId);
 
             Apply(evt);
 
@@ -55,16 +63,19 @@ namespace EventSourcing.Bank.Domain.Aggregates
             Id = evt.AccountId;
             AccountHolder = evt.AccountHolder;
             Balance = 0;
+            _processedCommands.Add(evt.CommandId);
         }
 
         private void Apply(MoneyDepositedEvent evt)
         {
             Balance += evt.Amount;
+            _processedCommands.Add(evt.CommandId);
         }
 
         private void Apply(MoneyWithdrawnEvent evt)
         {
             Balance -= evt.Amount;
+            _processedCommands.Add(evt.CommandId);
         }
 
         public void RestoreSnapshot(Guid id,string accountHolder,decimal balance,int version)

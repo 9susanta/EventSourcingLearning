@@ -4,15 +4,21 @@ using EventSourcing.Bank.Infrastructure.Persistence.Snapshots;
 using EventSourcing.Bank.Infrastructure.Serialization;
 using Microsoft.EntityFrameworkCore;
 
+using System.Collections.Concurrent;
+using EventSourcing.Bank.Infrastructure.Persistence.ReadModels;
+
 namespace EventSourcing.Bank.Infrastructure.Persistence
 {
     public class SqlServerEventStore : IEventStore
     {
         private readonly EventStoreDbContext _db;
+        private readonly AccountProjection _projection;
+        private static readonly ConcurrentDictionary<string, Type> _typeCache = new();
 
-        public SqlServerEventStore(EventStoreDbContext db)
+        public SqlServerEventStore(EventStoreDbContext db, AccountProjection projection)
         {
             _db = db;
+            _projection = projection;
             _db.Database.EnsureCreated();
         }
 
@@ -44,6 +50,9 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
                 };
 
                 _db.Events.Add(entity);
+
+                // Update Read Model synchronously
+                await _projection.ProjectAsync(account.Id, evt);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -92,7 +101,11 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
                 var typeName = row.Type;
                 var data = row.Data;
 
-                var type = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(t => t.FullName == typeName);
+                var type = _typeCache.GetOrAdd(typeName, name =>
+                    AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.FullName == name));
+                    
                 if (type == null) continue;
 
                 var evt = EventSerializer.Deserialize(data, type);
@@ -110,10 +123,8 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
 
         public async Task SaveSnapshotAsync(AccountAggregate account, CancellationToken cancellationToken)
         {
-            // Create snapshot every 10 events (configurable)
-            var eventCount = await _db.Events.Where(e => e.AggregateId == account.Id).CountAsync(cancellationToken);
-
-            if (eventCount % 5 == 0)
+            // Create snapshot every 5 events purely based on Aggregate Version
+            if (account.Version > 0 && account.Version % 5 == 0)
             {
                 var existingSnapshot = await _db.Snapshots
                     .Where(s => s.AggregateId == account.Id && s.Version == account.Version)

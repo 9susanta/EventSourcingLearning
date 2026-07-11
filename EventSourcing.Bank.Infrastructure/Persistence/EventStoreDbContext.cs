@@ -1,5 +1,6 @@
 namespace EventSourcing.Bank.Infrastructure.Persistence
 {
+    using EventSourcing.Bank.Infrastructure.Persistence.ReadModels;
     using Microsoft.EntityFrameworkCore;
 
     public class EventStoreDbContext : DbContext
@@ -10,6 +11,7 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
 
             public DbSet<EventEntity> Events { get; set; }
             public DbSet<SnapshotEntity> Snapshots { get; set; }
+            public DbSet<AccountReadModel> AccountReadModels { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -34,6 +36,12 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
                     b.Property(e => e.Data).IsRequired();
                     b.Property(e => e.CreatedAt).IsRequired();
                     b.HasIndex(e => new { e.AggregateId, e.Version }).IsUnique();
+                });
+
+                modelBuilder.Entity<AccountReadModel>(b =>
+                {
+                    b.ToTable("AccountReadModels");
+                    b.HasKey(e => e.Id);
                 });
             }
         }

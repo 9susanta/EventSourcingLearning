@@ -6,6 +6,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
     public record CreateAccountCommand : ICommand<AccountAggregate>
     {
         public string AccountHolder { get; set; }
+        public Guid CommandId { get; set; } = Guid.NewGuid();
     }
     public class CreateAccountCommandHandler : ICommandHandler<CreateAccountCommand, AccountAggregate>
     {
@@ -18,7 +19,8 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 
         public async Task<AccountAggregate> HandleAsync(CreateAccountCommand command, CancellationToken cancellationToken)
         {
-            return await _accountService.CreateAccountAsync(command.AccountHolder, cancellationToken);
+            // Note: CommandId is passed down to the service to ensure idempotency
+            return await _accountService.CreateAccountAsync(command.AccountHolder, command.CommandId, cancellationToken);
         }
     }
 }

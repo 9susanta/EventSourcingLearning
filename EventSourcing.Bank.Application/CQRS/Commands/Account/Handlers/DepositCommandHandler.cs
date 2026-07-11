@@ -7,6 +7,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
     {
         public Guid AccountId { get; set; }
         public decimal Amount { get; set; }
+        public Guid CommandId { get; set; } = Guid.NewGuid();
     }
     public class DepositCommandHandler : ICommandHandler<DepositCommand, AccountAggregate>
     {
@@ -19,7 +20,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 
         public async Task<AccountAggregate> HandleAsync(DepositCommand command, CancellationToken cancellationToken)
         {
-            return await _accountService.DepositAsync(command.AccountId, command.Amount, cancellationToken);
+            return await _accountService.DepositAsync(command.AccountId, command.Amount, command.CommandId, cancellationToken);
         }
     }
 }
