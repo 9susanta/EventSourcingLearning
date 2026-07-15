@@ -27,13 +27,13 @@ namespace EventSourcing.Bank.Infrastructure.Persistence.ReadModels
                     break;
 
                 case MoneyDepositedEvent e:
-                    var accountD = await _db.AccountReadModels.FindAsync(aggregateId);
-                    if (accountD != null) accountD.Balance += e.Amount;
+                    var accountD = await _db.AccountReadModels.FindAsync(new object[] { aggregateId });
+                    if (accountD != null) accountD.Balance += e.Amount.Amount;
                     break;
 
                 case MoneyWithdrawnEvent e:
-                    var accountW = await _db.AccountReadModels.FindAsync(aggregateId);
-                    if (accountW != null) accountW.Balance -= e.Amount;
+                    var accountW = await _db.AccountReadModels.FindAsync(new object[] { aggregateId });
+                    if (accountW != null) accountW.Balance -= e.Amount.Amount;
                     break;
             }
         }

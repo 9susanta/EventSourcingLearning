@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventSourcing.Bank.Domain.Events;
+using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Domain.Aggregates
 {
@@ -11,12 +13,17 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
         public string AccountHolder { get; private set; }
 
-        public decimal Balance { get; private set; }
+        public Money Balance { get; private set; }
 
         private readonly List<object> _uncommittedEvents = new();
         private readonly HashSet<Guid> _processedCommands = new();
 
         public IReadOnlyCollection<object> UncommittedEvents => _uncommittedEvents.AsReadOnly();
+
+        private readonly List<object> _domainEvents = new();
+        public IReadOnlyCollection<object> DomainEvents => _domainEvents.AsReadOnly();
+
+        public void ClearDomainEvents() => _domainEvents.Clear();
 
         public bool HasProcessedCommand(Guid commandId) => _processedCommands.Contains(commandId);
 
@@ -36,7 +43,7 @@ namespace EventSourcing.Bank.Domain.Aggregates
             return account;
         }
 
-        public void Deposit(decimal amount, Guid commandId)
+        public void Deposit(Money amount, Guid commandId)
         {
             if (HasProcessedCommand(commandId)) return;
 
@@ -47,13 +54,18 @@ namespace EventSourcing.Bank.Domain.Aggregates
             _uncommittedEvents.Add(evt);
         }
 
-        public void Withdraw(decimal amount, Guid commandId)
+        public void Withdraw(Money amount, Guid commandId)
         {
             if (HasProcessedCommand(commandId)) return;
 
             var evt = new MoneyWithdrawnEvent(amount, commandId);
 
             Apply(evt);
+
+            if (Balance.Amount < 0)
+            {
+                _domainEvents.Add(new AccountOverdrawnEvent(Id, Balance.Amount));
+            }
 
             _uncommittedEvents.Add(evt);
         }
@@ -62,19 +74,19 @@ namespace EventSourcing.Bank.Domain.Aggregates
         {
             Id = evt.AccountId;
             AccountHolder = evt.AccountHolder;
-            Balance = 0;
+            Balance = new Money(0);
             _processedCommands.Add(evt.CommandId);
         }
 
         private void Apply(MoneyDepositedEvent evt)
         {
-            Balance += evt.Amount;
+            Balance = Balance != null ? Balance.Add(evt.Amount) : evt.Amount;
             _processedCommands.Add(evt.CommandId);
         }
 
         private void Apply(MoneyWithdrawnEvent evt)
         {
-            Balance -= evt.Amount;
+            Balance = Balance != null ? Balance.Subtract(evt.Amount) : new Money(-evt.Amount.Amount);
             _processedCommands.Add(evt.CommandId);
         }
 
@@ -82,7 +94,7 @@ namespace EventSourcing.Bank.Domain.Aggregates
         {
             Id = id;
             AccountHolder = accountHolder;
-            Balance = balance;
+            Balance = new Money(balance);
             Version = version;
 
             ClearEvents();

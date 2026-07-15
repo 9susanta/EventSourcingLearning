@@ -1,5 +1,5 @@
 using EventSourcing.Bank.Domain.Aggregates;
-using EventSourcing.Bank.Application.Services;
+using EventSourcing.Bank.Application.Abstractions;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
@@ -10,17 +10,18 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
     }
     public class CreateAccountCommandHandler : ICommandHandler<CreateAccountCommand, AccountAggregate>
     {
-        private readonly IAccountService _accountService;
+        private readonly IAccountRepository _repository;
 
-        public CreateAccountCommandHandler(IAccountService accountService)
+        public CreateAccountCommandHandler(IAccountRepository repository)
         {
-            _accountService = accountService;
+            _repository = repository;
         }
 
         public async Task<AccountAggregate> HandleAsync(CreateAccountCommand command, CancellationToken cancellationToken)
         {
-            // Note: CommandId is passed down to the service to ensure idempotency
-            return await _accountService.CreateAccountAsync(command.AccountHolder, command.CommandId, cancellationToken);
+            var account = AccountAggregate.Create(command.AccountHolder, command.CommandId);
+            await _repository.SaveAsync(account, 0, cancellationToken);
+            return account;
         }
     }
 }

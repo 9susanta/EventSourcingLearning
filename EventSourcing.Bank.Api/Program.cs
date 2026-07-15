@@ -35,8 +35,14 @@ builder.Services.AddScoped<EventSourcing.Bank.Infrastructure.Persistence.ReadMod
 builder.Services.AddScoped<IEventStore, EventSourcing.Bank.Infrastructure.Persistence.SqlServerEventStore>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
-// Application Services (kept for backward compatibility)
-builder.Services.AddScoped<IAccountService, EventSourcing.Bank.Application.Services.AccountService>();
+// Domain & Application Services
+builder.Services.AddScoped<EventSourcing.Bank.Domain.Services.FundsTransferDomainService>();
+builder.Services.AddScoped<EventSourcing.Bank.Application.Services.DomainEventDispatcher>(sp => 
+{
+    var handlers = sp.GetServices<object>().Where(s => s.GetType().GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(EventSourcing.Bank.Application.Services.IDomainEventHandler<>)));
+    return new EventSourcing.Bank.Application.Services.DomainEventDispatcher(handlers);
+});
+builder.Services.AddScoped<object, EventSourcing.Bank.Application.Services.AccountOverdrawnSmsHandler>(); // Register as object for the dispatcher to find
 
 // CQRS Dispatchers
 builder.Services.AddScoped<CommandDispatcher>();
@@ -46,6 +52,7 @@ builder.Services.AddScoped<QueryDispatcher>();
 builder.Services.AddScoped<ICommandHandler<CreateAccountCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, CreateAccountCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DepositCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, DepositCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<WithdrawCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, WithdrawCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers.TransferCommand, bool>, EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers.TransferCommandHandler>();
 
 // Query Handlers
 builder.Services.AddScoped<IQueryHandler<GetAccountQuery, EventSourcing.Bank.Application.DTOs.AccountResponse>, GetAccountQueryHandler>();
@@ -57,6 +64,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext>();
+    // WIPE DB FOR LEARNING PURPOSES (Since Value Objects broke JSON schemas)
+    db.Database.EnsureDeleted();
     db.Database.Migrate();
 }
 

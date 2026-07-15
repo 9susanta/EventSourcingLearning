@@ -1,6 +1,7 @@
 using System;
+using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public record MoneyDepositedEvent(decimal Amount, Guid CommandId) : IEvent;
+    public record MoneyDepositedEvent(Money Amount, Guid CommandId);
 }

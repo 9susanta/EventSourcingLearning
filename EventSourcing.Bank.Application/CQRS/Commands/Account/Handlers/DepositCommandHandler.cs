@@ -1,5 +1,6 @@
-using EventSourcing.Bank.Application.Services;
 using EventSourcing.Bank.Domain.Aggregates;
+using EventSourcing.Bank.Application.Abstractions;
+using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
@@ -11,16 +12,19 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
     }
     public class DepositCommandHandler : ICommandHandler<DepositCommand, AccountAggregate>
     {
-        private readonly IAccountService _accountService;
+        private readonly IAccountRepository _repository;
 
-        public DepositCommandHandler(IAccountService accountService)
+        public DepositCommandHandler(IAccountRepository repository)
         {
-            _accountService = accountService;
+            _repository = repository;
         }
 
         public async Task<AccountAggregate> HandleAsync(DepositCommand command, CancellationToken cancellationToken)
         {
-            return await _accountService.DepositAsync(command.AccountId, command.Amount, command.CommandId, cancellationToken);
+            var account = await _repository.GetByIdAsync(command.AccountId, cancellationToken);
+            account.Deposit(new Money(command.Amount), command.CommandId);
+            await _repository.SaveWithSnapshotAsync(account, account.Version, cancellationToken);
+            return account;
         }
     }
 }

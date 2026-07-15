@@ -29,7 +29,7 @@ namespace EventSourcing.Bank.Api.Controllers
             {
                 var command = new CreateAccountCommand{ AccountHolder = req.Name };
                 var account = await _commandDispatcher.HandleAsync<CreateAccountCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
-                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
+                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
             catch (OperationCanceledException)
@@ -82,7 +82,7 @@ namespace EventSourcing.Bank.Api.Controllers
             {
                 var command = new DepositCommand{ AccountId = accountId, Amount = req.Amount };
                 var account = await _commandDispatcher.HandleAsync<DepositCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
-                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
+                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
             catch (OperationCanceledException)
@@ -103,7 +103,7 @@ namespace EventSourcing.Bank.Api.Controllers
             {
                 var command = new WithdrawCommand{ AccountId = accountId, Amount = req.Amount };
                 var account = await _commandDispatcher.HandleAsync<WithdrawCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
-                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance };
+                var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
             catch (OperationCanceledException)

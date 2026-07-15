@@ -7,11 +7,16 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
     {
         private readonly IEventStore _eventStore;
         private readonly EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext _db;
+        private readonly EventSourcing.Bank.Application.Services.DomainEventDispatcher _dispatcher;
 
-        public AccountRepository(IEventStore eventStore, EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext db)
+        public AccountRepository(
+            IEventStore eventStore, 
+            EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext db,
+            EventSourcing.Bank.Application.Services.DomainEventDispatcher dispatcher)
         {
             _eventStore = eventStore;
             _db = db;
+            _dispatcher = dispatcher;
         }
 
         public async Task<AccountAggregate> GetByIdAsync(Guid accountId, CancellationToken cancellationToken)
@@ -34,11 +39,24 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
 
         public async Task SaveAsync(AccountAggregate account, int expectedVersion, CancellationToken cancellationToken)
         {
+            var domainEventsToDispatch = account.DomainEvents.ToList();
+
             await _eventStore.SaveAsync(account, expectedVersion, cancellationToken);
+            
+            foreach (var evt in domainEventsToDispatch)
+            {
+                if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
+                {
+                    await _dispatcher.DispatchAsync(domainEvt);
+                }
+            }
+            account.ClearDomainEvents();
         }
 
         public async Task SaveWithSnapshotAsync(AccountAggregate account, int expectedVersion, CancellationToken cancellationToken)
         {
+            var domainEventsToDispatch = account.DomainEvents.ToList();
+
             await _eventStore.SaveAsync(account, expectedVersion, cancellationToken);
 
             // Cast to SqlServerEventStore to access snapshot functionality
@@ -46,6 +64,15 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
             {
                 await sqlEventStore.SaveSnapshotAsync(account, cancellationToken);
             }
+
+            foreach (var evt in domainEventsToDispatch)
+            {
+                if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
+                {
+                    await _dispatcher.DispatchAsync(domainEvt);
+                }
+            }
+            account.ClearDomainEvents();
         }
     }
 }
