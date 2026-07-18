@@ -4,12 +4,12 @@ using EventSourcing.Bank.Application.DTOs;
 
 namespace EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers
 {
-    public record GetAccountHistoryQuery : IQuery<IEnumerable<EventDto>>
+    public record GetAccountHistoryQuery : MediatR.IRequest<IEnumerable<EventDto>>
     {
         public Guid AccountId { get; set; }
 
     }
-    public class GetAccountHistoryQueryHandler : IQueryHandler<GetAccountHistoryQuery, IEnumerable<EventDto>>
+    public class GetAccountHistoryQueryHandler : MediatR.IRequestHandler<GetAccountHistoryQuery, IEnumerable<EventDto>>
     {
         private readonly IEventStore _eventStore;
 
@@ -18,7 +18,7 @@ namespace EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers
             _eventStore = eventStore;
         }
 
-        public async Task<IEnumerable<EventDto>> HandleAsync(GetAccountHistoryQuery query, CancellationToken cancellationToken)
+        public async Task<IEnumerable<EventDto>> Handle(GetAccountHistoryQuery query, CancellationToken cancellationToken)
         {
             return await _eventStore.GetEventsAsync(query.AccountId, cancellationToken);
         }

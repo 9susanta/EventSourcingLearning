@@ -3,12 +3,12 @@ using EventSourcing.Bank.Application.Abstractions;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
-    public record CreateAccountCommand : ICommand<AccountAggregate>
+    public record CreateAccountCommand : MediatR.IRequest<AccountAggregate>
     {
         public string AccountHolder { get; set; }
         public Guid CommandId { get; set; } = Guid.NewGuid();
     }
-    public class CreateAccountCommandHandler : ICommandHandler<CreateAccountCommand, AccountAggregate>
+    public class CreateAccountCommandHandler : MediatR.IRequestHandler<CreateAccountCommand, AccountAggregate>
     {
         private readonly IAccountRepository _repository;
 
@@ -17,7 +17,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
             _repository = repository;
         }
 
-        public async Task<AccountAggregate> HandleAsync(CreateAccountCommand command, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> Handle(CreateAccountCommand command, CancellationToken cancellationToken)
         {
             var account = AccountAggregate.Create(command.AccountHolder, command.CommandId);
             await _repository.SaveAsync(account, 0, cancellationToken);

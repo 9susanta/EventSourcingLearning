@@ -3,5 +3,5 @@ using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public record MoneyDepositedEvent(Money Amount, Guid CommandId);
+    public record MoneyDepositedEvent(Money Amount, Guid CommandId) : IDomainEvent;
 }

@@ -1,13 +1,9 @@
 using EventSourcing.Bank.Application.Services;
 using EventSourcing.Bank.Application.Abstractions;
 using EventSourcing.Bank.Infrastructure.Repositories;
-using EventSourcing.Bank.Infrastructure.CQRS;
-using EventSourcing.Bank.Application.CQRS.Commands;
-using EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers;
-using EventSourcing.Bank.Application.CQRS.Queries;
-using EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers;
-using Microsoft.EntityFrameworkCore;
 using EventSourcing.Bank.Application.CQRS.Queries.Account;
+using Microsoft.EntityFrameworkCore;
+using EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,26 +33,11 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
 // Domain & Application Services
 builder.Services.AddScoped<EventSourcing.Bank.Domain.Services.FundsTransferDomainService>();
-builder.Services.AddScoped<EventSourcing.Bank.Application.Services.DomainEventDispatcher>(sp => 
-{
-    var handlers = sp.GetServices<object>().Where(s => s.GetType().GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(EventSourcing.Bank.Application.Services.IDomainEventHandler<>)));
-    return new EventSourcing.Bank.Application.Services.DomainEventDispatcher(handlers);
+
+// Add MediatR
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly);
 });
-builder.Services.AddScoped<object, EventSourcing.Bank.Application.Services.AccountOverdrawnSmsHandler>(); // Register as object for the dispatcher to find
-
-// CQRS Dispatchers
-builder.Services.AddScoped<CommandDispatcher>();
-builder.Services.AddScoped<QueryDispatcher>();
-
-// Command Handlers
-builder.Services.AddScoped<ICommandHandler<CreateAccountCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, CreateAccountCommandHandler>();
-builder.Services.AddScoped<ICommandHandler<DepositCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, DepositCommandHandler>();
-builder.Services.AddScoped<ICommandHandler<WithdrawCommand, EventSourcing.Bank.Domain.Aggregates.AccountAggregate>, WithdrawCommandHandler>();
-builder.Services.AddScoped<ICommandHandler<EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers.TransferCommand, bool>, EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers.TransferCommandHandler>();
-
-// Query Handlers
-builder.Services.AddScoped<IQueryHandler<GetAccountQuery, EventSourcing.Bank.Application.DTOs.AccountResponse>, GetAccountQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetAccountHistoryQuery, IEnumerable<EventSourcing.Bank.Application.DTOs.EventDto>>, GetAccountHistoryQueryHandler>();
 
 var app = builder.Build();
 

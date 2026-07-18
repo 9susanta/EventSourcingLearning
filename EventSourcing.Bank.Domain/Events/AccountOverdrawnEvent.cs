@@ -2,7 +2,7 @@ using System;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public interface IDomainEvent
+    public interface IDomainEvent : MediatR.INotification
     {
     }
 

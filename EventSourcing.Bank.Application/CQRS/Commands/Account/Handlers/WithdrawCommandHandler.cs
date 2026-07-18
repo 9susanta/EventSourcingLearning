@@ -6,13 +6,13 @@ using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
-    public record WithdrawCommand : ICommand<AccountAggregate>
+    public record WithdrawCommand : MediatR.IRequest<AccountAggregate>
     {
         public Guid AccountId { get; set; }
         public decimal Amount { get; set; }
         public Guid CommandId { get; set; } = Guid.NewGuid();
     }
-    public class WithdrawCommandHandler : ICommandHandler<WithdrawCommand, AccountAggregate>
+    public class WithdrawCommandHandler : MediatR.IRequestHandler<WithdrawCommand, AccountAggregate>
     {
         private readonly IAccountRepository _repository;
 
@@ -21,7 +21,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
             _repository = repository;
         }
 
-        public async Task<AccountAggregate> HandleAsync(WithdrawCommand command, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> Handle(WithdrawCommand command, CancellationToken cancellationToken)
         {
             var account = await _repository.GetByIdAsync(command.AccountId, cancellationToken);
             account.Withdraw(new Money(command.Amount), command.CommandId);

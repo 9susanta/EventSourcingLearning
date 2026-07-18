@@ -7,16 +7,16 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
     {
         private readonly IEventStore _eventStore;
         private readonly EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext _db;
-        private readonly EventSourcing.Bank.Application.Services.DomainEventDispatcher _dispatcher;
+        private readonly MediatR.IPublisher _publisher;
 
         public AccountRepository(
             IEventStore eventStore, 
             EventSourcing.Bank.Infrastructure.Persistence.EventStoreDbContext db,
-            EventSourcing.Bank.Application.Services.DomainEventDispatcher dispatcher)
+            MediatR.IPublisher publisher)
         {
             _eventStore = eventStore;
             _db = db;
-            _dispatcher = dispatcher;
+            _publisher = publisher;
         }
 
         public async Task<AccountAggregate> GetByIdAsync(Guid accountId, CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
             {
                 if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
                 {
-                    await _dispatcher.DispatchAsync(domainEvt);
+                    await _publisher.Publish(domainEvt);
                 }
             }
             account.ClearDomainEvents();
@@ -69,7 +69,7 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
             {
                 if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
                 {
-                    await _dispatcher.DispatchAsync(domainEvt);
+                    await _publisher.Publish(domainEvt);
                 }
             }
             account.ClearDomainEvents();

@@ -4,13 +4,13 @@ using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
-    public record DepositCommand : ICommand<AccountAggregate>
+    public record DepositCommand : MediatR.IRequest<AccountAggregate>
     {
         public Guid AccountId { get; set; }
         public decimal Amount { get; set; }
         public Guid CommandId { get; set; } = Guid.NewGuid();
     }
-    public class DepositCommandHandler : ICommandHandler<DepositCommand, AccountAggregate>
+    public class DepositCommandHandler : MediatR.IRequestHandler<DepositCommand, AccountAggregate>
     {
         private readonly IAccountRepository _repository;
 
@@ -19,7 +19,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
             _repository = repository;
         }
 
-        public async Task<AccountAggregate> HandleAsync(DepositCommand command, CancellationToken cancellationToken)
+        public async Task<AccountAggregate> Handle(DepositCommand command, CancellationToken cancellationToken)
         {
             var account = await _repository.GetByIdAsync(command.AccountId, cancellationToken);
             account.Deposit(new Money(command.Amount), command.CommandId);

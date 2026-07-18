@@ -8,7 +8,7 @@ using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
 {
-    public record TransferCommand : ICommand<bool>
+    public record TransferCommand : MediatR.IRequest<bool>
     {
         public Guid SourceAccountId { get; set; }
         public Guid DestinationAccountId { get; set; }
@@ -16,7 +16,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
         public Guid CommandId { get; set; } = Guid.NewGuid();
     }
 
-    public class TransferCommandHandler : ICommandHandler<TransferCommand, bool>
+    public class TransferCommandHandler : MediatR.IRequestHandler<TransferCommand, bool>
     {
         private readonly IAccountRepository _repository;
         private readonly FundsTransferDomainService _domainService;
@@ -27,7 +27,7 @@ namespace EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers
             _domainService = domainService;
         }
 
-        public async Task<bool> HandleAsync(TransferCommand command, CancellationToken cancellationToken)
+        public async Task<bool> Handle(TransferCommand command, CancellationToken cancellationToken)
         {
             var source = await _repository.GetByIdAsync(command.SourceAccountId, cancellationToken);
             var destination = await _repository.GetByIdAsync(command.DestinationAccountId, cancellationToken);

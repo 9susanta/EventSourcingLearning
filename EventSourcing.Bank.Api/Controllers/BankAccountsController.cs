@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using EventSourcing.Bank.Application.DTOs;
 using EventSourcing.Bank.Application.Abstractions;
-using EventSourcing.Bank.Infrastructure.CQRS;
 using EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers;
 using EventSourcing.Bank.Application.CQRS.Queries.Account.Handlers;
 
@@ -11,14 +10,12 @@ namespace EventSourcing.Bank.Api.Controllers
     [Route("api/[controller]")]
     public class AccountsController : ControllerBase
     {
-        private readonly CommandDispatcher _commandDispatcher;
-        private readonly QueryDispatcher _queryDispatcher;
+        private readonly MediatR.IMediator _mediator;
         private readonly ILogger<AccountsController> _logger;
 
-        public AccountsController(CommandDispatcher commandDispatcher, QueryDispatcher queryDispatcher, ILogger<AccountsController> logger)
+        public AccountsController(MediatR.IMediator mediator, ILogger<AccountsController> logger)
         {
-            _commandDispatcher = commandDispatcher;
-            _queryDispatcher = queryDispatcher;
+            _mediator = mediator;
             _logger = logger;
         }
 
@@ -28,7 +25,7 @@ namespace EventSourcing.Bank.Api.Controllers
             try
             {
                 var command = new CreateAccountCommand{ AccountHolder = req.Name };
-                var account = await _commandDispatcher.HandleAsync<CreateAccountCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
+                var account = await _mediator.Send(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
@@ -49,7 +46,7 @@ namespace EventSourcing.Bank.Api.Controllers
             try
             {
                 var query = new GetAccountQuery{ AccountId = accountId };
-                var account = await _queryDispatcher.HandleAsync<GetAccountQuery, AccountResponse>(query, cancellationToken);
+                var account = await _mediator.Send(query, cancellationToken);
                 return Ok(account);
             }
             catch (OperationCanceledException)
@@ -65,7 +62,7 @@ namespace EventSourcing.Bank.Api.Controllers
             try
             {
                 var query = new GetAccountHistoryQuery{ AccountId = accountId };
-                var transactions = await _queryDispatcher.HandleAsync<GetAccountHistoryQuery, IEnumerable<EventDto>>(query, cancellationToken);
+                var transactions = await _mediator.Send(query, cancellationToken);
                 return Ok(transactions);
             }
             catch (OperationCanceledException)
@@ -81,7 +78,7 @@ namespace EventSourcing.Bank.Api.Controllers
             try
             {
                 var command = new DepositCommand{ AccountId = accountId, Amount = req.Amount };
-                var account = await _commandDispatcher.HandleAsync<DepositCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
+                var account = await _mediator.Send(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
@@ -102,13 +99,38 @@ namespace EventSourcing.Bank.Api.Controllers
             try
             {
                 var command = new WithdrawCommand{ AccountId = accountId, Amount = req.Amount };
-                var account = await _commandDispatcher.HandleAsync<WithdrawCommand, Domain.Aggregates.AccountAggregate>(command, cancellationToken);
+                var account = await _mediator.Send(command, cancellationToken);
                 var res = new AccountResponse { Id = account.Id, AccountHolder = account.AccountHolder, Balance = account.Balance.Amount };
                 return Ok(res);
             }
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Request cancelled by client for Withdraw {AccountId}", accountId);
+                return StatusCode(499);
+            }
+            catch (ConcurrencyException)
+            {
+                return Conflict();
+            }
+        }
+        [HttpPost("{accountId}/transfer")]
+        public async Task<IActionResult> Transfer(Guid accountId, [FromBody] TransferRequest req, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var command = new EventSourcing.Bank.Application.CQRS.Commands.Account.Handlers.TransferCommand 
+                { 
+                    SourceAccountId = accountId, 
+                    DestinationAccountId = req.DestinationAccountId, 
+                    Amount = req.Amount 
+                };
+                
+                await _mediator.Send(command, cancellationToken);
+                return Ok(new { Message = "Transfer successful" });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Request cancelled by client for Transfer {AccountId}", accountId);
                 return StatusCode(499);
             }
             catch (ConcurrencyException)

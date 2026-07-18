@@ -15,15 +15,18 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
         public Money Balance { get; private set; }
 
-        private readonly List<object> _uncommittedEvents = new();
+        // 1. Core State Events: These are the historical facts that will be saved to the Event Store Database.
+        private readonly List<object> _eventsToSaveToDatabase = new();
+        public IReadOnlyCollection<object> UncommittedEvents => _eventsToSaveToDatabase.AsReadOnly();
+
+        // 2. Side-Effect Events: These are ONLY populated when something triggers an external system (like SMS).
+        // It will often be empty (count = 0) unless a business rule triggers a side-effect (e.g., overdraft).
+        private readonly List<object> _sideEffectEventsToPublish = new();
+        public IReadOnlyCollection<object> DomainEvents => _sideEffectEventsToPublish.AsReadOnly();
+
+        public void ClearDomainEvents() => _sideEffectEventsToPublish.Clear();
+
         private readonly HashSet<Guid> _processedCommands = new();
-
-        public IReadOnlyCollection<object> UncommittedEvents => _uncommittedEvents.AsReadOnly();
-
-        private readonly List<object> _domainEvents = new();
-        public IReadOnlyCollection<object> DomainEvents => _domainEvents.AsReadOnly();
-
-        public void ClearDomainEvents() => _domainEvents.Clear();
 
         public bool HasProcessedCommand(Guid commandId) => _processedCommands.Contains(commandId);
 
@@ -38,7 +41,8 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
             account.Apply(evt);
 
-            account._uncommittedEvents.Add(evt);
+            account._eventsToSaveToDatabase.Add(evt);
+            account._sideEffectEventsToPublish.Add(evt);
 
             return account;
         }
@@ -51,7 +55,8 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
             Apply(evt);
 
-            _uncommittedEvents.Add(evt);
+            _eventsToSaveToDatabase.Add(evt);
+            _sideEffectEventsToPublish.Add(evt);
         }
 
         public void Withdraw(Money amount, Guid commandId)
@@ -64,10 +69,12 @@ namespace EventSourcing.Bank.Domain.Aggregates
 
             if (Balance.Amount < 0)
             {
-                _domainEvents.Add(new AccountOverdrawnEvent(Id, Balance.Amount));
+                // ONLY fill the DomainEvents list when a side-effect is needed!
+                _sideEffectEventsToPublish.Add(new AccountOverdrawnEvent(Id, Balance.Amount));
             }
 
-            _uncommittedEvents.Add(evt);
+            _eventsToSaveToDatabase.Add(evt);
+            _sideEffectEventsToPublish.Add(evt);
         }
 
         private void Apply(AccountCreatedEvent evt)
@@ -125,7 +132,7 @@ namespace EventSourcing.Bank.Domain.Aggregates
         }
         public void ClearEvents()
         {
-            _uncommittedEvents.Clear();
+            _eventsToSaveToDatabase.Clear();
         }
 
         public void SetVersion(int v) => Version = v;
