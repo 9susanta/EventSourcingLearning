@@ -8,10 +8,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EventSourcing.Bank.Domain\EventSourcing.Bank.Domain.csproj" />
+    <ProjectReference Include="..\EventSourcing.Bank.MessageContracts\EventSourcing.Bank.MessageContracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.3.1" />
     <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Polly" Version="8.7.0" />
   </ItemGroup>
 
 </Project>

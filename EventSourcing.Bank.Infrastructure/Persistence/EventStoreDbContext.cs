@@ -12,6 +12,8 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
             public DbSet<EventEntity> Events { get; set; }
             public DbSet<SnapshotEntity> Snapshots { get; set; }
             public DbSet<AccountReadModel> AccountReadModels { get; set; }
+            public DbSet<OutboxMessage> OutboxMessages { get; set; }
+            public DbSet<InboxMessage> InboxMessages { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -41,6 +43,20 @@ namespace EventSourcing.Bank.Infrastructure.Persistence
                 modelBuilder.Entity<AccountReadModel>(b =>
                 {
                     b.ToTable("AccountReadModels");
+                    b.HasKey(e => e.Id);
+                });
+
+                modelBuilder.Entity<OutboxMessage>(b =>
+                {
+                    b.ToTable("OutboxMessages");
+                    b.HasKey(e => e.Id);
+                    b.Property(e => e.Type).IsRequired();
+                    b.Property(e => e.Content).IsRequired();
+                });
+
+                modelBuilder.Entity<InboxMessage>(b =>
+                {
+                    b.ToTable("InboxMessages");
                     b.HasKey(e => e.Id);
                 });
             }

@@ -70,7 +70,7 @@ namespace EventSourcing.Bank.Domain.Aggregates
             if (Balance.Amount < 0)
             {
                 // ONLY fill the DomainEvents list when a side-effect is needed!
-                _sideEffectEventsToPublish.Add(new AccountOverdrawnEvent(Id, Balance.Amount));
+                _sideEffectEventsToPublish.Add(new AccountOverdrawnEvent(Id, Balance, commandId));
             }
 
             _eventsToSaveToDatabase.Add(evt);

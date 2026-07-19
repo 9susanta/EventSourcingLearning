@@ -9,7 +9,7 @@ namespace EventSourcing.Bank.Application.Services
         public Task Handle(AccountOverdrawnEvent domainEvent, System.Threading.CancellationToken cancellationToken)
         {
             // Simulate sending an SMS
-            Console.WriteLine($"[SMS SERVICE] WARNING: Account {domainEvent.AccountId} is overdrawn by {-domainEvent.OverdrawnAmount}!");
+            Console.WriteLine($"[SMS SERVICE] WARNING: Account {domainEvent.AccountId} is overdrawn by {-domainEvent.Amount.Amount}!");
             
             // Or log it properly via ILogger
             return Task.CompletedTask;

@@ -4,6 +4,7 @@ using EventSourcing.Bank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EventSourcing.Bank.Infrastructure.Migrations
 {
     [DbContext(typeof(EventStoreDbContext))]
-    partial class EventStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718173414_AddOutboxInbox")]
+    partial class AddOutboxInbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,9 +80,6 @@ namespace EventSourcing.Bank.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("DeadLetterDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Error")
                         .HasColumnType("nvarchar(max)");
 
@@ -88,9 +88,6 @@ namespace EventSourcing.Bank.Infrastructure.Migrations
 
                     b.Property<DateTime?>("ProcessedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()

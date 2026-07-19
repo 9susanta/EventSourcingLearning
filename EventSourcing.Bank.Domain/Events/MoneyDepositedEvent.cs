@@ -3,5 +3,8 @@ using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public record MoneyDepositedEvent(Money Amount, Guid CommandId) : IDomainEvent;
+    public record MoneyDepositedEvent(Money Amount, Guid CommandId) : IDomainEvent
+    {
+        public Guid EventId { get; } = Guid.NewGuid();
+    }
 }

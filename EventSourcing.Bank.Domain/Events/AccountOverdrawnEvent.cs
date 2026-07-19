@@ -1,10 +1,10 @@
 using System;
+using EventSourcing.Bank.Domain.ValueObjects;
 
 namespace EventSourcing.Bank.Domain.Events
 {
-    public interface IDomainEvent : MediatR.INotification
+    public record AccountOverdrawnEvent(Guid AccountId, Money Amount, Guid CommandId) : IDomainEvent
     {
+        public Guid EventId { get; } = Guid.NewGuid();
     }
-
-    public record AccountOverdrawnEvent(Guid AccountId, decimal OverdrawnAmount) : IDomainEvent;
 }

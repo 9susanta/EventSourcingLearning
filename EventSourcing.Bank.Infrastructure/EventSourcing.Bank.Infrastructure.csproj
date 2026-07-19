@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.3.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
@@ -14,11 +15,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EventSourcing.Bank.Domain\EventSourcing.Bank.Domain.csproj" />
     <ProjectReference Include="..\EventSourcing.Bank.Application\EventSourcing.Bank.Application.csproj" />
+    <ProjectReference Include="..\EventSourcing.Bank.MessageContracts\EventSourcing.Bank.MessageContracts.csproj" />
   </ItemGroup>
 
 </Project>

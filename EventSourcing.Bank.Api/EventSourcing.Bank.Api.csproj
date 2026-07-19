@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.3.1" />
     <PackageReference Include="MediatR" Version="14.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
@@ -19,6 +20,8 @@
     <ProjectReference Include="..\EventSourcing.Bank.Domain\EventSourcing.Bank.Domain.csproj" />
     <ProjectReference Include="..\EventSourcing.Bank.Application\EventSourcing.Bank.Application.csproj" />
     <ProjectReference Include="..\EventSourcing.Bank.Infrastructure\EventSourcing.Bank.Infrastructure.csproj" />
+    <ProjectReference Include="..\EventSourcing.Bank.Modules.Email\EventSourcing.Bank.Modules.Email.csproj" />
+    <ProjectReference Include="..\EventSourcing.Bank.Modules.Security\EventSourcing.Bank.Modules.Security.csproj" />
   </ItemGroup>
 
 </Project>

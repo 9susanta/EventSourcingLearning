@@ -41,21 +41,52 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
         {
             var domainEventsToDispatch = account.DomainEvents.ToList();
 
-            await _eventStore.SaveAsync(account, expectedVersion, cancellationToken);
-            
+            // 2. THE OUTBOX PATTERN
+            // We serialize the intent to publish and save it BEFORE calling the event store.
+            // When the EventStore calls SaveChangesAsync, it will atomically commit the Events and the OutboxMessages together.
             foreach (var evt in domainEventsToDispatch)
             {
                 if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
                 {
-                    await _publisher.Publish(domainEvt);
+                    var outboxMessage = new EventSourcing.Bank.Infrastructure.Persistence.OutboxMessage
+                    {
+                        Id = Guid.NewGuid(),
+                        Type = domainEvt.GetType().AssemblyQualifiedName ?? domainEvt.GetType().Name,
+                        Content = System.Text.Json.JsonSerializer.Serialize(domainEvt, domainEvt.GetType()),
+                        OccurredOn = DateTime.UtcNow
+                    };
+                    
+                    _db.OutboxMessages.Add(outboxMessage);
                 }
             }
+            
+            await _eventStore.SaveAsync(account, expectedVersion, cancellationToken);
+            
+
             account.ClearDomainEvents();
         }
 
         public async Task SaveWithSnapshotAsync(AccountAggregate account, int expectedVersion, CancellationToken cancellationToken)
         {
             var domainEventsToDispatch = account.DomainEvents.ToList();
+
+            // 2. THE OUTBOX PATTERN
+            // We serialize the intent to publish and save it BEFORE calling the event store.
+            foreach (var evt in domainEventsToDispatch)
+            {
+                if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
+                {
+                    var outboxMessage = new EventSourcing.Bank.Infrastructure.Persistence.OutboxMessage
+                    {
+                        Id = Guid.NewGuid(),
+                        Type = domainEvt.GetType().AssemblyQualifiedName ?? domainEvt.GetType().Name,
+                        Content = System.Text.Json.JsonSerializer.Serialize(domainEvt, domainEvt.GetType()),
+                        OccurredOn = DateTime.UtcNow
+                    };
+                    
+                    _db.OutboxMessages.Add(outboxMessage);
+                }
+            }
 
             await _eventStore.SaveAsync(account, expectedVersion, cancellationToken);
 
@@ -65,13 +96,6 @@ namespace EventSourcing.Bank.Infrastructure.Repositories
                 await sqlEventStore.SaveSnapshotAsync(account, cancellationToken);
             }
 
-            foreach (var evt in domainEventsToDispatch)
-            {
-                if (evt is EventSourcing.Bank.Domain.Events.IDomainEvent domainEvt)
-                {
-                    await _publisher.Publish(domainEvt);
-                }
-            }
             account.ClearDomainEvents();
         }
     }
